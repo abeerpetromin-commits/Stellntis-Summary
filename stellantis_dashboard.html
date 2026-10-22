@@ -322,6 +322,7 @@
 <div class="filter-bar">
   <span class="filter-label">Period</span>
   <button class="filter-btn active" data-period="ytd">YTD</button>
+  <button class="filter-btn" data-period="prev" id="prevBtn">Last Month</button>
   <button class="filter-btn" data-period="mtd" id="mtdBtn">MTD</button>
   <div class="status">
     <span class="live-dot load" id="liveDot"></span>
@@ -413,16 +414,18 @@ function aggregate(key, mode){
   const h = d.header;
   const si = col(h,/^status$/i), bi = col(h,/^booked\??$/i), ri = col(h,/^if\s*no/i);
   const di = src.dateCols.map(c => h.indexOf(c)).filter(i => i>=0);
-  const now = new Date(), curM = now.getMonth()+1;
+  const now = new Date();
+  let tgtY = YEAR, tgtM = now.getMonth()+1;
+  if(mode==="prev"){ tgtM -= 1; if(tgtM===0){ tgtM=12; tgtY-=1; } }
   let a=0, n=0, y=0; const reasons = {};
   for(const r of d.rows){
     const s = (r[si]||"").trim().toLowerCase();
     const isAns = (s==="answered" || s==="answer");
     const isNo  = s.startsWith("no answer");
     if(!isAns && !isNo) continue;
-    if(mode==="mtd"){
+    if(mode==="mtd" || mode==="prev"){
       let dt=null; for(const i of di){ dt=parseDate(r[i]); if(dt) break; }
-      if(!dt || dt.y!==YEAR || dt.m!==curM) continue;
+      if(!dt || dt.y!==tgtY || dt.m!==tgtM) continue;
     }
     if(isNo){ n++; continue; }
     a++;
@@ -507,6 +510,7 @@ async function loadAll(){
 }
 
 document.getElementById('mtdBtn').textContent = 'MTD ' + MONTHS[new Date().getMonth()];
+document.getElementById('prevBtn').textContent = MONTHS[(new Date().getMonth()+11)%12];
 document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => { period = btn.dataset.period; render(); }));
 document.getElementById('refreshBtn').addEventListener('click', loadAll);
 
